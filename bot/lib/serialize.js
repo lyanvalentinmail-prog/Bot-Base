@@ -11,6 +11,7 @@ export function unwrapMessage (message) {
   let guard = 0
   while (content && guard++ < 5) {
     const type = getContentType(content)
+    if (type === 'deviceSentMessage') { content = content.deviceSentMessage.message; continue }
     if (type === 'ephemeralMessage') { content = content.ephemeralMessage.message; continue }
     if (type === 'viewOnceMessage') { content = content.viewOnceMessage.message; continue }
     if (type === 'viewOnceMessageV2') { content = content.viewOnceMessageV2.message; continue }

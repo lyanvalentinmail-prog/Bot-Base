@@ -4,7 +4,7 @@
  * comando, pasar la cadena de middlewares y ejecutar.
  * Toda la logica concreta vive en lib/ y middleware/.
  */
-import config from './config.js'
+import config, { isOwnerNumber } from './config.js'
 import logger from './lib/logger.js'
 import serialize from './lib/serialize.js'
 import registry from './lib/loader.js'
@@ -91,7 +91,7 @@ async function handleOne (sock, raw, runtime) {
   db.markDirty()
 
   /* ─── Permisos de contexto ─── */
-  const isOwner = config.ownerNumbers.includes(userKey(m.sender)) || m.fromMe
+  const isOwner = isOwnerNumber(m.sender) || m.fromMe
   const isAdmin = m.isGroup ? checkAdmin(metadata, m.sender) : false
   const isBotAdmin = m.isGroup ? checkAdmin(metadata, m.botJid) : false
 
@@ -121,10 +121,24 @@ async function handleOne (sock, raw, runtime) {
   // El id de un boton ya viene con prefijo y se trata como texto normal.
   const body = m.buttonId || m.body
   const parsed = parseCommand(body, prefix)
+
+  logger.debug({
+    chat: m.isGroup ? 'grupo' : 'privado',
+    de: m.senderNumber,
+    propio: m.fromMe,
+    tipo: m.type,
+    prefijo: prefix,
+    texto: String(body || '').slice(0, 40),
+    comando: parsed?.name || null
+  }, 'mensaje recibido')
+
   if (!parsed) return
 
   const command = registry.resolve(parsed.name)
-  if (!command) return
+  if (!command) {
+    logger.debug({ intento: parsed.name }, 'no existe ningun comando con ese nombre')
+    return
+  }
 
   if (config.autoRead) await sock.readMessages([m.key]).catch(() => {})
 

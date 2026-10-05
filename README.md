@@ -169,8 +169,11 @@ Variables opcionales (ya incluidas en `.env.example`): `LOG_LEVEL`, `PAIRING_NUM
 `ENABLE_GROUPS`, `AUTO_READ`.
 
 > ⚠️ El **owner se identifica únicamente por `OWNER_NUMBER`**. Si lo dejas vacío, ningún comando Ⓞ funcionará.
-> El prefijo y el modo también se pueden cambiar en caliente con `.setprefix`, `.public` y `.private`
-> (esos valores quedan guardados en la base de datos y tienen prioridad sobre el `.env`).
+> Se aceptan las variantes habituales del mismo número (México `52`/`521`, Argentina `54`/`549`).
+>
+> El prefijo y el modo se leen del `.env` **siempre**, salvo que los cambies en caliente con
+> `.setprefix`, `.public` o `.private`: a partir de ese momento manda el valor guardado en la base de
+> datos (para volver al `.env`, usa de nuevo el comando con el valor que quieras).
 
 ---
 
@@ -183,6 +186,7 @@ Variables opcionales (ya incluidas en `.env.example`): `LOG_LEVEL`, `PAIRING_NUM
 | `npm run setup` | Asistente: crea carpetas, genera el `.env`, comprueba ffmpeg/yt-dlp y valida los comandos |
 | `npm run reset-session` | Borra la sesión para vincular otro número |
 | `npm run check` | Diagnóstico completo: imports, comandos, menú, base de datos, permisos y `.gitignore` |
+| `npm run selftest` | Autotest: simula mensajes de WhatsApp y comprueba que los comandos, permisos y modos responden |
 | `npm run clean` | Vacía `assets/temp/` |
 
 ---
@@ -437,6 +441,32 @@ Si una descarga falla, actualiza yt-dlp: `pip install -U yt-dlp`.
 <summary><b>«⚠️ Este servicio no está configurado»</b></summary>
 
 Ese comando necesita una API key. Añádela en el `.env` y reinicia el bot. Mira qué falta con `.servicios`.
+</details>
+
+<details>
+<summary><b>El bot está conectado pero NO responde a ningún comando</b></summary>
+
+Recórrelo en este orden:
+
+1. Mira la línea que imprime el bot al arrancar:
+   `💬 Prefijo activo: "." · Modo: public · Owner: 5491112345678`
+   Debes escribir **exactamente** ese prefijo (`.menu`, sin espacio después del punto).
+2. Si dice **Modo: private**, el bot solo responde al owner: manda `.public` desde el número
+   de `OWNER_NUMBER` o pon `BOT_MODE=public` en el `.env` y reinicia.
+3. Activa las trazas y vuelve a enviar un comando:
+
+   ```bash
+   LOG_LEVEL=debug npm start
+   ```
+
+   Verás por cada mensaje: `"mensaje recibido"` con el prefijo detectado y el comando; si un filtro
+   lo bloquea aparece `"comando bloqueado por un middleware"` con el nombre del filtro
+   (`banned`, `mode`, `disabled`, `scope`, `permissions`, `args`, `cooldown`, `limit`).
+   Si **no aparece nada**, el bot no está recibiendo los mensajes: vuelve a vincular con
+   `npm run reset-session && npm start`.
+4. Comprueba que la lógica del bot está sana sin WhatsApp de por medio: `npm run selftest`.
+5. Si enviaste el mismo comando dos veces seguidas y solo recibes un 🕒, es el anti-spam
+   (`COMMAND_COOLDOWN`, 3 s por comando y usuario).
 </details>
 
 <details>

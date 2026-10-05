@@ -10,7 +10,7 @@ import process from 'node:process'
 import config from './config.js'
 import logger from './lib/logger.js'
 import registry from './lib/loader.js'
-import { initDatabase, db } from './database/index.js'
+import { initDatabase, db, getPrefix, getMode } from './database/index.js'
 import { startTempSweeper, ensureTempDir } from './lib/tmp.js'
 import { hasBinary } from './lib/binaries.js'
 import { createHandler } from './handler.js'
@@ -79,6 +79,14 @@ async function main () {
   }
 
   console.log(`📦 Comandos cargados: ${registry.size} (${registry.byCategory().size} categorías)`)
+  console.log(
+    `💬 Prefijo activo: "${getPrefix()}"  ·  Modo: ${getMode()}  ·  ` +
+    `Owner: ${config.ownerNumbers.join(', ') || 'SIN CONFIGURAR'}`
+  )
+  if (getMode() === 'private') {
+    console.log('   ⚠️  En modo privado SOLO responde al owner. Usa .public o BOT_MODE=public para abrirlo.')
+  }
+  console.log(`   Prueba enviando: ${getPrefix()}menu`)
   reportServices()
   startTempSweeper()
 

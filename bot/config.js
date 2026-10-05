@@ -28,10 +28,39 @@ const str = (value, fallback = '') => {
 /** Normaliza un numero telefonico: solo digitos. */
 export const onlyDigits = (value) => String(value ?? '').replace(/\D/g, '')
 
+/**
+ * Variantes equivalentes de un numero de telefono.
+ * WhatsApp usa 52XXXXXXXXXX en Mexico (sin el 1) y 549XXXXXXXXXX en Argentina
+ * (con el 9), pero la gente suele escribirlo de la otra forma en el .env.
+ */
+export function phoneVariants (value) {
+  const digits = onlyDigits(value)
+  if (!digits) return []
+  const variants = new Set([digits])
+  if (digits.startsWith('521')) variants.add('52' + digits.slice(3))
+  else if (digits.startsWith('52')) variants.add('521' + digits.slice(2))
+  if (digits.startsWith('549')) variants.add('54' + digits.slice(3))
+  else if (digits.startsWith('54')) variants.add('549' + digits.slice(2))
+  return [...variants]
+}
+
 const owners = str(process.env.OWNER_NUMBER)
   .split(/[,;\s]+/)
   .map(onlyDigits)
   .filter((n) => n.length >= 7)
+
+/** Todas las variantes aceptadas de los numeros de OWNER_NUMBER. */
+const ownerVariants = new Set(owners.flatMap(phoneVariants))
+
+/**
+ * ¿Este jid/numero pertenece al propietario?
+ * Tolera las variantes 52/521 (Mexico) y 54/549 (Argentina).
+ */
+export function isOwnerNumber (jid) {
+  const digits = onlyDigits(String(jid).split('@')[0].split(':')[0])
+  if (!digits) return false
+  return phoneVariants(digits).some((variant) => ownerVariants.has(variant))
+}
 
 export const config = {
   // Identidad

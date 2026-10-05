@@ -28,4 +28,9 @@ export function clear (userId) {
   }
 }
 
-export default { check, set, clear }
+/** Borra todos los enfriamientos (se usa en .reload y en el autotest). */
+export function clearAll () {
+  cache.flushAll()
+}
+
+export default { check, set, clear, clearAll }

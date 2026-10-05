@@ -5,6 +5,7 @@
  *
  * Mantener esta cadena separada evita un handler gigantesco.
  */
+import logger from '../lib/logger.js'
 import banned from './banned.js'
 import mode from './mode.js'
 import disabled from './disabled.js'
@@ -24,7 +25,14 @@ export const chain = [banned, mode, disabled, scope, permissions, args, cooldown
 export async function runMiddlewares (ctx) {
   for (const middleware of chain) {
     const allowed = await middleware(ctx)
-    if (!allowed) return false
+    if (!allowed) {
+      // Visible con LOG_LEVEL=debug: dice exactamente que filtro bloqueo el comando.
+      logger.debug(
+        { comando: ctx.command?.name, filtro: middleware.name, usuario: ctx.m?.senderNumber },
+        'comando bloqueado por un middleware'
+      )
+      return false
+    }
   }
   return true
 }

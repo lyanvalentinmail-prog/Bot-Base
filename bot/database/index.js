@@ -15,6 +15,7 @@ export async function initDatabase () {
   // Migracion suave del documento completo.
   store.data = applyDefaults(store.data, dbSchema())
   store.data.settings = applyDefaults(store.data.settings, settingsSchema())
+  migrateSettings()
   store.markDirty()
   logger.info(
     { usuarios: Object.keys(store.data.users).length, grupos: Object.keys(store.data.groups).length },
@@ -187,8 +188,22 @@ export function isCommandDisabled (name, groupId = null) {
 
 export function setSetting (key, value) {
   store.data.settings[key] = value
+  if (key === 'prefix') store.data.settings.prefixExplicit = true
+  if (key === 'mode') store.data.settings.modeExplicit = true
   store.markDirty()
   return value
+}
+
+/**
+ * Bases de datos antiguas guardaban el prefijo y el modo del .env al crearse,
+ * lo que hacia que editar el .env no tuviera efecto. Si nadie los cambio con
+ * un comando, se devuelve el control al .env.
+ */
+export function migrateSettings () {
+  const settings = store.data.settings
+  if (!settings.prefixExplicit && settings.prefix) settings.prefix = null
+  if (!settings.modeExplicit && settings.mode) settings.mode = null
+  store.markDirty()
 }
 
 export function getPrefix () {

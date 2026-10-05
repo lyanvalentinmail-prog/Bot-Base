@@ -1,7 +1,6 @@
 /** Enfriamiento por usuario para evitar spam. El owner queda exento. */
 import config from '../config.js'
 import cooldowns from '../lib/cooldown.js'
-import { timeLeft } from '../lib/functions.js'
 
 export default async function cooldown (ctx) {
   const { command, user, m, isOwner } = ctx
@@ -18,6 +17,5 @@ export default async function cooldown (ctx) {
 
   cooldowns.set(user.id, command.name, seconds)
   ctx.cooldownApplied = { user: user.id, command: command.name }
-  void timeLeft
   return true
 }

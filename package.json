@@ -13,6 +13,7 @@
     "setup": "node scripts/setup.js",
     "reset-session": "node scripts/reset-session.js",
     "check": "node scripts/check.js",
+    "selftest": "node scripts/selftest.js",
     "clean": "node scripts/clean-temp.js"
   },
   "keywords": [

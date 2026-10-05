@@ -71,8 +71,13 @@ export const groupSchema = () => ({
 })
 
 export const settingsSchema = () => ({
-  prefix: config.prefix,
-  mode: config.mode,
+  // null = "usar el valor del .env". Solo se fijan aqui cuando el owner los
+  // cambia en caliente (.setprefix / .public / .private); asi editar el .env
+  // sigue funcionando despues de la primera ejecucion.
+  prefix: null,
+  mode: null,
+  prefixExplicit: false,
+  modeExplicit: false,
   bannedUsers: [],
   disabledCommands: [],
   premiumUsers: [],

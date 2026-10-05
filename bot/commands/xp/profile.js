@@ -1,5 +1,5 @@
 /** Perfil del usuario: nivel, XP, economia y limites. */
-import config from '../../config.js'
+import config, { isOwnerNumber } from '../../config.js'
 import { getUser } from '../../database/index.js'
 import { xpForLevel, rankOf } from '../../lib/levelling.js'
 import { formatNumber, progressBar, formatDate } from '../../lib/functions.js'
@@ -31,7 +31,7 @@ export default {
       `│🎐 Monedas ☇ *${formatNumber(target.money)}*\n` +
       `║🍙 Límite diario ☇ *${target.premium ? '∞ (premium)' : formatNumber(target.limit)}*\n` +
       `│🎋 Premium ☇ *${target.premium ? `sí (hasta ${formatDate(target.premiumUntil, false)})` : 'no'}*\n` +
-      `║🗾 Rol ☇ *${(!targetJid && isOwner) || config.ownerNumbers.includes(target.id) ? 'Owner' : target.premium ? 'Premium' : 'Usuario'}*\n` +
+      `║🗾 Rol ☇ *${(!targetJid && isOwner) || isOwnerNumber(target.id) ? 'Owner' : target.premium ? 'Premium' : 'Usuario'}*\n` +
       `│🎏 Mensajes ☇ *${formatNumber(target.messages || 0)}*\n` +
       `║🎑 Comandos ☇ *${formatNumber(target.commands || 0)}*\n` +
       `╰━━━━━━━━━━━━━━━━━━━⬣`

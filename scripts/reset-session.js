@@ -11,9 +11,13 @@ import process from 'node:process'
 import readline from 'node:readline/promises'
 import { fileURLToPath } from 'node:url'
 
+import { ensureDependencies } from '../bot/lib/preflight.js'
+
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
 async function main () {
+  ensureDependencies('npm run reset-session')
+
   const { default: config } = await import('../bot/config.js')
   const sessionDir = config.paths.sessions
 

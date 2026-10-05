@@ -6,7 +6,11 @@
 import fsp from 'node:fs/promises'
 import path from 'node:path'
 
+import { ensureDependencies } from '../bot/lib/preflight.js'
+
 async function main () {
+  ensureDependencies('npm run clean')
+
   const { default: config } = await import('../bot/config.js')
   const dir = config.paths.temp
 

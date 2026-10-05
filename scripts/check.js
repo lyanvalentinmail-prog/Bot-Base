@@ -11,6 +11,8 @@ import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
+import { ensureDependencies } from '../bot/lib/preflight.js'
+
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const c = { reset: '\x1b[0m', bold: '\x1b[1m', green: '\x1b[32m', yellow: '\x1b[33m', red: '\x1b[31m', dim: '\x1b[2m' }
 
@@ -24,6 +26,8 @@ async function main () {
   console.log(`\n${c.bold}🔍 DIAGNÓSTICO DEL BOT${c.reset}\n`)
 
   /* Config */
+  ensureDependencies('npm run check')
+
   const { default: config } = await import('../bot/config.js')
   ok(`Configuración cargada · ${config.botName} v${config.botVersion} · prefijo "${config.prefix}"`)
   if (!config.ownerNumbers.length) warn('OWNER_NUMBER vacío: los comandos de propietario no funcionarán')

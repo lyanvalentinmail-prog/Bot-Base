@@ -15,6 +15,8 @@ import process from 'node:process'
 import readline from 'node:readline/promises'
 import { fileURLToPath } from 'node:url'
 
+import { ensureDependencies } from '../bot/lib/preflight.js'
+
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const ENV_FILE = path.join(ROOT, '.env')
 const ENV_EXAMPLE = path.join(ROOT, '.env.example')
@@ -35,7 +37,7 @@ async function main () {
   console.log(`${c.bold}│   ⚙️  CONFIGURACIÓN INICIAL DEL BOT        │${c.reset}`)
   console.log(`${c.bold}╰───────────────────────────────────────────╯${c.reset}\n`)
 
-  /* 1. Node */
+  /* 1. Node y dependencias */
   const major = Number(process.versions.node.split('.')[0])
   if (major < 20) {
     fail(`Node.js ${process.versions.node} detectado. Se requiere la versión 20 o superior.`)
@@ -43,6 +45,9 @@ async function main () {
     process.exit(1)
   }
   ok(`Node.js ${process.versions.node}`)
+
+  ensureDependencies('npm run setup')
+  ok('Dependencias instaladas')
 
   /* 2. Carpetas */
   for (const dir of ['sessions', 'data', 'assets/temp']) {

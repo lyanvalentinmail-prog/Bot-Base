@@ -460,6 +460,23 @@ Ejecuta `termux-wake-lock` y desactiva la optimización de batería para Termux.
 </details>
 
 <details>
+<summary><b>«Cannot find package 'pino'» (o cualquier otro paquete)</b></summary>
+
+Faltan las dependencias: `npm install` no se ejecutó o se cortó a mitad. Desde la carpeta del proyecto:
+
+```bash
+cd ~/Bot-base
+rm -rf node_modules package-lock.json
+npm cache clean --force
+npm install
+npm run setup
+```
+
+En Termux, `git` es **obligatorio** (Baileys descarga una dependencia desde GitHub):
+`pkg install nodejs-lts git -y`. Los scripts del bot detectan este caso y te indican qué ejecutar.
+</details>
+
+<details>
 <summary><b>Errores al instalar en Termux</b></summary>
 
 ```bash

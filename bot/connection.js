@@ -110,6 +110,29 @@ export async function connect (onMessages) {
 
   state.sock = sock
 
+  /* ─── Eco de mensajes propios ───
+   * El bot puede estar vinculado a la cuenta de su propio dueno: en ese caso
+   * los mensajes que el dueno escribe desde el movil llegan como "propios".
+   * Se apuntan los ids de lo que envia el bot para distinguir una cosa de la
+   * otra y poder atender los comandos del dueno sin crear bucles.
+   */
+  const selfSent = new NodeCache({ stdTTL: 600, checkperiod: 120 })
+  const originalSend = sock.sendMessage.bind(sock)
+  sock.sendMessage = async (...params) => {
+    const result = await originalSend(...params)
+    if (result?.key?.id) selfSent.set(result.key.id, true)
+    return result
+  }
+  const originalRelay = sock.relayMessage.bind(sock)
+  sock.relayMessage = async (...params) => {
+    const result = await originalRelay(...params)
+    const id = typeof result === 'string' ? result : result?.key?.id || params[2]?.messageId
+    if (id) selfSent.set(id, true)
+    return result
+  }
+  /** ¿Este mensaje lo envio el propio bot? */
+  sock.isSelfSent = (id) => Boolean(id && selfSent.get(id))
+
   /* ─── Pairing Code ───
    * El número se pide una sola vez por ejecución y el código se solicita
    * cuando el socket ya está listo (WhatsApp emite un "qr" en ese momento),
@@ -150,8 +173,9 @@ export async function connect (onMessages) {
 
   /* ─── Mensajes ─── */
   sock.ev.on('messages.upsert', async (update) => {
-    // Solo "notify": "append" son mensajes que el propio bot acaba de enviar.
-    if (update.type !== 'notify') return
+    // "notify": mensajes entrantes. "append": mensajes de la propia cuenta
+    // (p. ej. el dueno escribiendo desde su movil con el bot vinculado ahi).
+    if (update.type !== 'notify' && update.type !== 'append') return
     try {
       await onMessages(sock, update)
     } catch (error) {

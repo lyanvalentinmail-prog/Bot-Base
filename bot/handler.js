@@ -4,7 +4,7 @@
  * comando, pasar la cadena de middlewares y ejecutar.
  * Toda la logica concreta vive en lib/ y middleware/.
  */
-import config, { isOwnerNumber } from './config.js'
+import config, { isOwnerNumber, COMMON_PREFIXES } from './config.js'
 import logger from './lib/logger.js'
 import serialize from './lib/serialize.js'
 import registry from './lib/loader.js'
@@ -26,21 +26,43 @@ const XP_PER_MESSAGE = () => randomInt(2, 8)
 const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 /**
+ * Prefijos aceptados: el configurado y, salvo que MULTI_PREFIX=false, los
+ * habituales. Asi un prefijo mal escrito nunca deja al bot sin responder.
+ * @returns {string[]} ordenados del mas largo al mas corto
+ */
+export function prefixList (prefix) {
+  const list = [prefix]
+  if (config.multiPrefix) {
+    for (const alternative of COMMON_PREFIXES) {
+      if (!list.includes(alternative)) list.push(alternative)
+    }
+  }
+  return list.filter(Boolean).sort((a, b) => b.length - a.length)
+}
+
+/**
  * Detecta el prefijo usado y separa comando y argumentos.
  * Acepta tambien el id devuelto por un boton (que ya es un comando completo).
+ * @param {string} body
+ * @param {string|string[]} prefixes prefijo configurado o lista de aceptados
  */
-export function parseCommand (body, prefix) {
+export function parseCommand (body, prefixes) {
   const text = String(body || '').trim()
   if (!text) return null
-  const pattern = new RegExp(`^(${escapeRegex(prefix)})\\s*([^\\s]+)\\s*([\\s\\S]*)$`)
-  const match = text.match(pattern)
-  if (!match) return null
-  return {
-    usedPrefix: match[1],
-    name: match[2].toLowerCase(),
-    text: (match[3] || '').trim(),
-    args: (match[3] || '').trim().split(/\s+/).filter(Boolean)
+  const list = Array.isArray(prefixes) ? prefixes : [prefixes]
+  for (const prefix of list) {
+    if (!prefix) continue
+    const pattern = new RegExp(`^(${escapeRegex(prefix)})\\s*([^\\s]+)\\s*([\\s\\S]*)$`)
+    const match = text.match(pattern)
+    if (!match) continue
+    return {
+      usedPrefix: match[1],
+      name: match[2].toLowerCase(),
+      text: (match[3] || '').trim(),
+      args: (match[3] || '').trim().split(/\s+/).filter(Boolean)
+    }
   }
+  return null
 }
 
 /**
@@ -66,15 +88,21 @@ async function handleOne (sock, raw, runtime) {
   const m = serialize(sock, raw)
   if (!m || m.isStatus) return
   if (m.type === 'protocolMessage' || m.type === 'reactionMessage' || m.type === 'senderKeyDistributionMessage') return
-  // Los mensajes propios SÍ se procesan: permiten usar el bot desde su propio
-  // teléfono (se tratan como owner). Las respuestas del bot nunca empiezan por
-  // el prefijo, así que no hay bucles.
+  // Los mensajes propios SÍ se procesan: así el dueño puede usar el bot desde
+  // el mismo teléfono donde está vinculado. Lo único que se descarta es el eco
+  // de lo que ha enviado el propio bot (evita cualquier bucle).
+  if (m.fromMe && sock.isSelfSent?.(m.id)) return
   if (m.isGroup && !config.enableGroups) return
 
   /* ─── Base de datos ─── */
   const user = getUser(m.sender, m.pushName)
-  user.messages = (user.messages || 0) + 1
-  db.data.stats.messages = (db.data.stats.messages || 0) + 1
+  try {
+    user.messages = (user.messages || 0) + 1
+    db.data.stats.messages = (db.data.stats.messages || 0) + 1
+  } catch (error) {
+    // Un fallo contando mensajes jamas debe impedir que el comando se ejecute.
+    logger.warn({ err: error.message }, 'no se pudieron actualizar las estadisticas')
+  }
 
   let group = null
   let metadata = null
@@ -84,11 +112,16 @@ async function handleOne (sock, raw, runtime) {
   }
 
   /* ─── XP por actividad ─── */
-  const xpResult = addXp(user, XP_PER_MESSAGE())
-  db.data.users[user.id].xp = user.xp
-  db.data.users[user.id].level = user.level
-  db.data.users[user.id].messages = user.messages
-  db.markDirty()
+  let xpResult = { leveledUp: false }
+  try {
+    xpResult = addXp(user, XP_PER_MESSAGE())
+    db.data.users[user.id].xp = user.xp
+    db.data.users[user.id].level = user.level
+    db.data.users[user.id].messages = user.messages
+    db.markDirty()
+  } catch (error) {
+    logger.warn({ err: error.message }, 'no se pudo otorgar XP')
+  }
 
   /* ─── Permisos de contexto ─── */
   const isOwner = isOwnerNumber(m.sender) || m.fromMe
@@ -96,6 +129,7 @@ async function handleOne (sock, raw, runtime) {
   const isBotAdmin = m.isGroup ? checkAdmin(metadata, m.botJid) : false
 
   const prefix = getPrefix()
+  const prefixes = prefixList(prefix)
   const settings = { ...db.settings, prefix, mode: getMode() }
 
   const baseCtx = {
@@ -106,8 +140,26 @@ async function handleOne (sock, raw, runtime) {
   /* ─── Protecciones de grupo (antilink...) ─── */
   if (!(await runGuards(baseCtx))) return
 
+  /* ─── Resolver comando ─── */
+  // El id de un boton ya viene con prefijo y se trata como texto normal.
+  const body = m.buttonId || m.body
+  const parsed = parseCommand(body, prefixes)
+  const command = parsed ? registry.resolve(parsed.name) : null
+
+  logger.debug({
+    chat: m.isGroup ? 'grupo' : 'privado',
+    de: m.senderNumber,
+    propio: m.fromMe,
+    tipo: m.type,
+    prefijo: prefix,
+    texto: String(body || '').slice(0, 40),
+    comando: command?.name || parsed?.name || null
+  }, 'mensaje recibido')
+
   /* ─── Juegos activos: sus respuestas no llevan prefijo ─── */
-  if (await handleGameMessage(baseCtx)) return
+  // Se consultan DESPUES de resolver el comando: asi un .menu siempre
+  // funciona aunque haya una partida a medias en el chat.
+  if (!command && await handleGameMessage(baseCtx)) return
 
   /* ─── Aviso de subida de nivel ─── */
   if (xpResult.leveledUp && m.isGroup) {
@@ -117,26 +169,8 @@ async function handleOne (sock, raw, runtime) {
     }).catch(() => {})
   }
 
-  /* ─── Resolver comando ─── */
-  // El id de un boton ya viene con prefijo y se trata como texto normal.
-  const body = m.buttonId || m.body
-  const parsed = parseCommand(body, prefix)
-
-  logger.debug({
-    chat: m.isGroup ? 'grupo' : 'privado',
-    de: m.senderNumber,
-    propio: m.fromMe,
-    tipo: m.type,
-    prefijo: prefix,
-    texto: String(body || '').slice(0, 40),
-    comando: parsed?.name || null
-  }, 'mensaje recibido')
-
-  if (!parsed) return
-
-  const command = registry.resolve(parsed.name)
   if (!command) {
-    logger.debug({ intento: parsed.name }, 'no existe ningun comando con ese nombre')
+    if (parsed) logger.debug({ intento: parsed.name }, 'no existe ningun comando con ese nombre')
     return
   }
 

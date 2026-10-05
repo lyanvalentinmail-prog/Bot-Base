@@ -41,6 +41,7 @@ Funciona en **Termux (Android)** y en **Linux/VPS**.
 | ♻️ **Reconexión automática** | Reintentos con espera progresiva ante caídas de red |
 | 🧩 **Plugins** | Cada comando es un archivo en `bot/commands/<categoría>/`; se cargan solos |
 | 🎌 **Menú dinámico** | Banner + tarjeta con datos reales + botón/lista de categorías y respaldo en texto |
+| 🔣 **Nunca mudo** | Acepta los prefijos habituales aunque te equivoques, y responde también desde el teléfono donde está vinculado |
 | 🔐 **Permisos reales** | Ⓟ premium · Ⓛ límite diario · Ⓞ owner · Ⓐ admin (se comprueban de verdad) |
 | 📌 **Validación de argumentos** | `<obligatorio>` y `[opcional]` se validan automáticamente |
 | ★ **XP y niveles** | Experiencia por actividad, rangos y ranking global |
@@ -149,6 +150,7 @@ Para no escribir el número cada vez, rellena `PAIRING_NUMBER` en el `.env`.
 BOT_NAME=NombreBot          # Nombre que muestra el menú
 BOT_VERSION=1.0.0
 PREFIX=.                    # Prefijo de los comandos
+MULTI_PREFIX=true           # Acepta además . ! # / , ; $ & (false = solo el tuyo)
 OWNER_NAME=Owner
 OWNER_NUMBER=               # TU número, solo dígitos (varios separados por comas)
 BOT_MODE=public             # public | private
@@ -449,8 +451,14 @@ Ese comando necesita una API key. Añádela en el `.env` y reinicia el bot. Mira
 Recórrelo en este orden:
 
 1. Mira la línea que imprime el bot al arrancar:
-   `💬 Prefijo activo: "." · Modo: public · Owner: 5491112345678`
-   Debes escribir **exactamente** ese prefijo (`.menu`, sin espacio después del punto).
+
+   ```
+   💬 Prefijo activo: "."  ·  Modo: public  ·  Owner: 5491112345678
+      También acepta: ! # / , ; $ &
+   ```
+
+   Prueba con `.menu` y, si no, con `!menu` o `/menu`: el bot acepta todos esos prefijos
+   salvo que pongas `MULTI_PREFIX=false`.
 2. Si dice **Modo: private**, el bot solo responde al owner: manda `.public` desde el número
    de `OWNER_NUMBER` o pon `BOT_MODE=public` en el `.env` y reinicia.
 3. Activa las trazas y vuelve a enviar un comando:
@@ -467,6 +475,9 @@ Recórrelo en este orden:
 4. Comprueba que la lógica del bot está sana sin WhatsApp de por medio: `npm run selftest`.
 5. Si enviaste el mismo comando dos veces seguidas y solo recibes un 🕒, es el anti-spam
    (`COMMAND_COOLDOWN`, 3 s por comando y usuario).
+6. ¿Vinculaste el bot a **tu propia cuenta** y escribes desde ese mismo teléfono? Funciona:
+   el bot atiende tus mensajes (y te trata como owner) e ignora solo el eco de sus propias
+   respuestas. Si no responde, revisa los puntos 1-3.
 </details>
 
 <details>

@@ -13,7 +13,7 @@ import registry from './lib/loader.js'
 import { initDatabase, db, getPrefix, getMode } from './database/index.js'
 import { startTempSweeper, ensureTempDir } from './lib/tmp.js'
 import { hasBinary } from './lib/binaries.js'
-import { createHandler } from './handler.js'
+import { createHandler, prefixList } from './handler.js'
 import { connect, state } from './connection.js'
 import { servicesStatus } from './lib/apiClient.js'
 
@@ -83,6 +83,9 @@ async function main () {
     `💬 Prefijo activo: "${getPrefix()}"  ·  Modo: ${getMode()}  ·  ` +
     `Owner: ${config.ownerNumbers.join(', ') || 'SIN CONFIGURAR'}`
   )
+  if (config.multiPrefix) {
+    console.log(`   También acepta: ${prefixList(getPrefix()).filter((p) => p !== getPrefix()).join(' ')}  (MULTI_PREFIX=false para desactivarlo)`)
+  }
   if (getMode() === 'private') {
     console.log('   ⚠️  En modo privado SOLO responde al owner. Usa .public o BOT_MODE=public para abrirlo.')
   }

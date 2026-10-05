@@ -28,6 +28,9 @@ const str = (value, fallback = '') => {
 /** Normaliza un numero telefonico: solo digitos. */
 export const onlyDigits = (value) => String(value ?? '').replace(/\D/g, '')
 
+/** Prefijos alternativos que el bot acepta ademas del configurado. */
+export const COMMON_PREFIXES = ['.', '!', '#', '/', ',', ';', '$', '&']
+
 /**
  * Variantes equivalentes de un numero de telefono.
  * WhatsApp usa 52XXXXXXXXXX en Mexico (sin el 1) y 549XXXXXXXXXX en Argentina
@@ -67,6 +70,9 @@ export const config = {
   botName: str(process.env.BOT_NAME, 'Bot-Base'),
   botVersion: str(process.env.BOT_VERSION, '1.0.0'),
   prefix: str(process.env.PREFIX, '.'),
+  // Acepta tambien los prefijos habituales (. ! # / , ; $ &) para que un
+  // prefijo mal escrito nunca deje al bot mudo. El menu sigue mostrando el tuyo.
+  multiPrefix: bool(process.env.MULTI_PREFIX, true),
   ownerName: str(process.env.OWNER_NAME, 'Owner'),
   ownerNumbers: owners,
   mode: str(process.env.BOT_MODE, 'public').toLowerCase() === 'private' ? 'private' : 'public',

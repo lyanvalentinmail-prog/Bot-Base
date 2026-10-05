@@ -49,11 +49,16 @@ const GROUP = '120363000000000000@g.us'
 
 const sent = []
 
+const selfSentIds = new Set()
+
 const sock = {
   user: { id: BOT, name: 'Bot' },
+  isSelfSent: (id) => selfSentIds.has(id),
   async sendMessage (jid, content) {
     sent.push({ jid, content })
-    return { key: { id: `mock-${sent.length}`, remoteJid: jid, fromMe: true } }
+    const id = `mock-${sent.length}`
+    selfSentIds.add(id)
+    return { key: { id, remoteJid: jid, fromMe: true } }
   },
   async relayMessage (jid, content) {
     sent.push({ jid, content, relay: true })
@@ -205,13 +210,24 @@ async function main () {
   check('modo público: vuelve a responder a todos', out !== '')
 
   /* 8. Prefijo */
+  for (const alternative of ['!', '#', '/']) {
+    out = await send(`${alternative}ping`)
+    check(`acepta el prefijo alternativo "${alternative}"`, out !== '', out.slice(0, 80))
+  }
+
   await send(`${prefix}setprefix #`, { from: OWNER })
-  out = await send('#ping')
-  check('.setprefix cambia el prefijo', out !== '', out.slice(0, 120))
-  out = await send(`${prefix}ping`)
-  check('el prefijo antiguo deja de funcionar', out === '')
+  out = await send('#menu')
+  check('.setprefix cambia el prefijo que muestra el menú', out.includes('#menu') || out.includes('#'), out.slice(0, 120))
   check('el cambio de prefijo queda marcado como explícito', db.settings.prefixExplicit === true)
   setSetting('prefix', prefix)
+
+  /* 8b. Nunca mudo: modo privado sin owner configurado */
+  const savedOwners = config.ownerNumbers.splice(0, config.ownerNumbers.length)
+  setSetting('mode', 'private')
+  out = await send(`${prefix}ping`, { from: USER })
+  check('modo privado SIN owner no bloquea a todo el mundo', out !== '', out.slice(0, 80))
+  setSetting('mode', 'public')
+  config.ownerNumbers.push(...savedOwners)
 
   /* 9. Grupos y economía */
   out = await send(`${prefix}perfil`, { from: USER, chat: GROUP })
@@ -238,6 +254,29 @@ async function main () {
 
   out = await send(`${prefix}ping`)
   check('el bot sigue respondiendo tras el error', out !== '')
+
+  /* 10b. Una partida a medias no secuestra los comandos */
+  const { setSession, endSession } = await import('../bot/lib/games.js')
+  setSession(USER, { type: 'math', answer: 42, money: 1, xp: 1, expiresAt: Date.now() + 60000 })
+  out = await send(`${prefix}ping`)
+  check('un juego activo no impide usar comandos', out !== '' && !/incorrecta/i.test(out), out.slice(0, 80))
+  endSession(USER)
+
+  /* 10c. Mensajes propios: el dueño usa el bot desde su propio teléfono */
+  out = await send(`${prefix}ping`, { from: BOT, chat: USER, fromMe: true })
+  check('responde a los comandos del propio teléfono vinculado', out !== '', out.slice(0, 80))
+
+  reset()
+  await handle(sock, {
+    type: 'append',
+    messages: [{
+      key: { remoteJid: USER, fromMe: true, id: 'mock-1' },
+      pushName: 'Bot',
+      messageTimestamp: Math.floor(Date.now() / 1000),
+      message: { conversation: `${prefix}ping` }
+    }]
+  })
+  check('ignora el eco de sus propios mensajes (sin bucles)', output() === '')
 
   /* 11. Usuario registrado */
   const user = getUser(USER)

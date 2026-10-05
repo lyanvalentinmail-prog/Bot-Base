@@ -1,0 +1,50 @@
+# ─── Secretos / configuracion local ───
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+
+# ─── Sesiones de WhatsApp (NUNCA subir) ───
+sessions/*
+!sessions/.gitkeep
+session/
+auth_info*/
+*.creds.json
+baileys_store*
+
+# ─── Base de datos y datos persistentes ───
+data/*
+!data/.gitkeep
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# ─── Archivos temporales / multimedia generada ───
+assets/temp/*
+!assets/temp/.gitkeep
+/tmp/
+/temp/
+*.tmp
+*.webp.tmp
+
+# ─── Node ───
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json.bak
+.npm/
+
+# ─── Logs ───
+logs/
+*.log
+
+# ─── Sistema / editor ───
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp

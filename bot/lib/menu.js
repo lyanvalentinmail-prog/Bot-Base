@@ -42,7 +42,7 @@ export function buildMainMenu ({ userName, registry, prefix, mode, uptimeMs, sta
   const modeLabel = mode === 'private' ? 'Privado' : 'Público'
   return `¡Hola, *${userName}* 🎌
 *${config.botName}* está listo para acompañarte durante el día 🎐
-¡Toca el botón de abajo y elige una opción del menú!
+Aquí tienes todos mis comandos 👇
 
 
 ╭──( *${config.botName}*)
@@ -106,43 +106,9 @@ export function buildFullMenu (registry, prefix) {
   ].join('\n')
 }
 
-/* ─────────────── Lista de categorias (boton/lista) ─────────────── */
+/* ─────────────── Indice de categorias ─────────────── */
 
-/** Secciones para el mensaje de lista con todas las categorias que tienen comandos. */
-export function buildCategorySections (registry, prefix) {
-  const grouped = registry.byCategory()
-  const rows = []
-  for (const category of CATEGORIES) {
-    const commands = grouped.get(category.id)
-    if (!commands?.length) continue
-    rows.push({
-      id: `${prefix}menu ${category.id}`,
-      title: `${category.icon} ${category.label}`,
-      description: `${commands.length} comandos · ${category.description}`
-    })
-  }
-  // Categorias fuera del listado oficial (carpetas nuevas) tambien aparecen.
-  for (const [categoryId, commands] of grouped) {
-    if (CATEGORIES.some((c) => c.id === categoryId)) continue
-    rows.push({
-      id: `${prefix}menu ${categoryId}`,
-      title: `❏ ${categoryId.toUpperCase()}`,
-      description: `${commands.length} comandos`
-    })
-  }
-
-  // WhatsApp limita el tamaño de cada seccion: se parte en bloques de 10.
-  const sections = []
-  for (let i = 0; i < rows.length; i += 10) {
-    sections.push({
-      title: sections.length === 0 ? '📚 Categorías' : `📚 Categorías (${sections.length + 1})`,
-      rows: rows.slice(i, i + 10)
-    })
-  }
-  return sections
-}
-
-/** Texto de respaldo con las categorias (cuando no hay botones). */
+/** Indice de categorias en texto plano. */
 export function buildCategoryListText (registry, prefix) {
   const grouped = registry.byCategory()
   const lines = [`╭─❏ *CATEGORÍAS* ❏`]
@@ -166,7 +132,6 @@ export default {
   buildMainMenu,
   buildCategoryMenu,
   buildFullMenu,
-  buildCategorySections,
   buildCategoryListText,
   buildCategoryBlock,
   badgesOf,

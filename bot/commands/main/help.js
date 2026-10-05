@@ -18,7 +18,7 @@ export default {
     const name = (args[0] || '').replace(prefix, '').toLowerCase()
     const command = registry.resolve(name)
     if (!command) {
-      await m.reply(`❌ No encontré el comando *${name}*.\nUsa *${prefix}menu list* para ver las categorías.`)
+      await m.reply(`❌ No encontré el comando *${name}*.\nUsa *${prefix}menu* para ver todos los comandos.`)
       return
     }
 

@@ -1,17 +1,14 @@
 /**
- * Menu principal con banner, datos dinamicos y boton de categorias.
+ * Menu principal con banner y datos dinamicos.
  * Uso:
- *   .menu            -> banner + tarjeta + botón "📚 VER LISTA DE COMANDOS"
- *   .menu list       -> lista/categorías
- *   .menu <categoría> -> comandos de esa categoría
+ *   .menu             -> banner + tarjeta + todos los comandos por categoria
+ *   .menu <categoría> -> solo los comandos de esa categoria
  */
 import fs from 'node:fs/promises'
 import config from '../../config.js'
-import { sendInteractive } from '../../lib/buttons.js'
-import {
-  buildMainMenu, buildCategoryMenu, buildCategorySections, buildCategoryListText
-} from '../../lib/menu.js'
+import { buildMainMenu, buildCategoryMenu, buildFullMenu, buildCategoryListText } from '../../lib/menu.js'
 import { getCategory } from '../../lib/categories.js'
+import { chunkText } from '../../lib/functions.js'
 
 export default {
   name: 'menu',
@@ -24,23 +21,8 @@ export default {
   owner: false,
   admin: false,
 
-  async exec ({ sock, m, args, user, registry, prefix, settings, runtime }) {
+  async exec ({ m, args, user, registry, prefix, settings, runtime }) {
     const query = (args[0] || '').toLowerCase()
-
-    /* ─── Lista de categorías ─── */
-    if (['list', 'lista', 'categorias', 'categorías'].includes(query)) {
-      const sections = buildCategorySections(registry, prefix)
-      await sendInteractive(sock, m.chat, {
-        title: `📚 Categorías de ${config.botName}`,
-        body: buildCategoryListText(registry, prefix),
-        footer: `${registry.total} comandos disponibles`,
-        sections,
-        listTitle: '📚 Elegir categoría',
-        fallback: buildCategoryListText(registry, prefix),
-        quoted: m.raw
-      })
-      return
-    }
 
     /* ─── Una categoría concreta ─── */
     if (query) {
@@ -57,8 +39,8 @@ export default {
       return
     }
 
-    /* ─── Menú principal ─── */
-    const text = buildMainMenu({
+    /* ─── Menú completo: tarjeta + todos los comandos ─── */
+    const card = buildMainMenu({
       userName: user.name || m.pushName || 'Usuario',
       registry,
       prefix,
@@ -68,15 +50,12 @@ export default {
     })
 
     const banner = await fs.readFile(config.paths.banner).catch(() => null)
+    if (banner) await m.reply({ image: banner, caption: card })
+    else await m.reply(card)
 
-    await sendInteractive(sock, m.chat, {
-      title: config.botName,
-      body: text,
-      footer: `${config.botName} v${config.botVersion}`,
-      image: banner,
-      buttons: [{ id: `${prefix}menu list`, text: '📚 VER LISTA DE COMANDOS' }],
-      fallback: `${text}\n\n📚 *VER LISTA DE COMANDOS* ➜ escribe *${prefix}menu list*`,
-      quoted: m.raw
-    })
+    // El listado completo va aparte y troceado: WhatsApp corta los mensajes largos.
+    for (const part of chunkText(buildFullMenu(registry, prefix), 3500)) {
+      await m.reply(part)
+    }
   }
 }

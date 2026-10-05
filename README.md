@@ -40,7 +40,7 @@ Funciona en **Termux (Android)** y en **Linux/VPS**.
 | 💾 **Sesión persistente** | Se guarda en `sessions/`; al reiniciar no hay que volver a vincular |
 | ♻️ **Reconexión automática** | Reintentos con espera progresiva ante caídas de red |
 | 🧩 **Plugins** | Cada comando es un archivo en `bot/commands/<categoría>/`; se cargan solos |
-| 🎌 **Menú dinámico** | Banner + tarjeta con datos reales + botón/lista de categorías y respaldo en texto |
+| 🎌 **Menú dinámico** | Banner + tarjeta con datos reales + listado completo de comandos por categoría |
 | 🔣 **Nunca mudo** | Acepta los prefijos habituales aunque te equivoques, y responde también desde el teléfono donde está vinculado |
 | 🔐 **Permisos reales** | Ⓟ premium · Ⓛ límite diario · Ⓞ owner · Ⓐ admin (se comprueban de verdad) |
 | 📌 **Validación de argumentos** | `<obligatorio>` y `[opcional]` se validan automáticamente |
@@ -199,10 +199,9 @@ El listado real y el total se generan **automáticamente** a partir de los archi
 Dentro de WhatsApp:
 
 ```
-.menu              → menú principal con banner y botón
-.menu list         → categorías
-.menu tools        → comandos de una categoría
-.commands          → todos los comandos
+.menu              → banner + tarjeta + todos los comandos por categoría
+.menu tools        → solo los comandos de esa categoría
+.commands          → listado completo de comandos
 .cmd <comando>     → ayuda detallada de un comando
 ```
 
@@ -276,10 +275,11 @@ Para comandos de multimedia, un archivo adjunto o citado cuenta como argumento.
 ## 🎌 Menú
 
 `.menu` envía `assets/banner.jpg` con la tarjeta de información (nombre, owner, versión, modo, estado,
-tiempo activo, usuario, prefijo y total de comandos — todo dinámico) y el botón **📚 VER LISTA DE COMANDOS**.
+tiempo activo, usuario, prefijo y total de comandos — todo dinámico) y, justo después, **el listado
+completo de comandos** agrupado por categorías. Sin botones ni listas interactivas: texto plano que
+funciona en cualquier versión de WhatsApp.
 
-Al pulsarlo se abre la lista de categorías. Si el cliente de WhatsApp no soporta mensajes interactivos,
-el bot envía automáticamente el mismo contenido en texto, con los comandos escribibles: nunca te quedas sin menú.
+Con `.menu <categoría>` (por ejemplo `.menu ai`) recibes solo esa categoría.
 
 Cada categoría se muestra en small caps (solo presentación; los comandos reales siguen siendo `.chat`, `.ping`…):
 
@@ -485,13 +485,6 @@ Recórrelo en este orden:
 
 Comprueba: que no esté en modo privado (`.public`), que el grupo no esté silenciado (`.mute off`),
 que `ENABLE_GROUPS=true` y que no estés baneado.
-</details>
-
-<details>
-<summary><b>Los botones no aparecen</b></summary>
-
-WhatsApp no entrega mensajes interactivos en todas las versiones/cuentas. El bot lo detecta y envía
-el mismo menú en texto; las opciones siguen funcionando escribiéndolas (`.menu list`, `.menu ai`…).
 </details>
 
 <details>

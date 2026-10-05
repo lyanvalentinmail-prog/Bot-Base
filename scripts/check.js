@@ -93,8 +93,14 @@ async function main () {
   if (sample?.includes('୨୧')) ok('Menú por categoría generado correctamente')
   else fail('El menú por categoría falló')
 
-  const sections = menu.buildCategorySections(registry, config.prefix)
-  ok(`Lista de categorías: ${sections.reduce((total, s) => total + s.rows.length, 0)} entradas en ${sections.length} sección(es)`)
+  const full = menu.buildFullMenu(registry, config.prefix)
+  const blocks = (full.match(/୨୧ ❏/g) || []).length
+  if (blocks === registry.byCategory().size) ok(`Menú completo: ${blocks} categorías y ${registry.total} comandos`)
+  else fail(`El menú completo tiene ${blocks} bloques y hay ${registry.byCategory().size} categorías`)
+
+  const index = menu.buildCategoryListText(registry, config.prefix)
+  if (index.includes(`${config.prefix}menu ai`)) ok('Índice de categorías generado correctamente')
+  else fail('El índice de categorías falló')
 
   /* Herramientas */
   const { hasBinary } = await import('../bot/lib/binaries.js')

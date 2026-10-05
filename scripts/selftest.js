@@ -166,11 +166,12 @@ async function main () {
   check('.ping responde', /pong|ms|🏓/i.test(out), out.slice(0, 120))
 
   out = await send(`${prefix}menu`)
-  check('.menu responde con la tarjeta del bot', out.includes(config.botName) && /ᴛᴏᴛᴀʟ|VER LISTA|ᴄᴏᴍᴀɴᴅᴏ|📚/i.test(out), out.slice(0, 160))
+  check('.menu responde con la tarjeta del bot', out.includes(config.botName) && out.includes('Total de comandos'), out.slice(0, 160))
+  check('.menu envía el banner como imagen', sent.some((item) => item.content?.image))
   check('.menu no inventa el total de comandos', out.includes(String(registry.size)) || out.includes(String(registry.total)))
 
-  out = await send(`${prefix}menu list`)
-  check('.menu list muestra las categorías', /ᴀɪ|ᴛᴏᴏʟs|ᴛᴏᴏʟꜱ|RPG|ʀᴘɢ/i.test(out), out.slice(0, 160))
+  check('.menu incluye el listado completo de comandos', /୨୧ ❏/.test(out) && /ᴛᴏᴛᴀʟ/i.test(out), out.slice(0, 160))
+  check('.menu no usa botones ni listas interactivas', !sent.some((item) => JSON.stringify(item.content || {}).includes('nativeFlowMessage')))
 
   out = await send(`${prefix}menu ai`)
   check('.menu ai muestra una categoría concreta', /ᴄʜᴀᴛ|ᴀsᴋ|ᴀꜱᴋ/i.test(out), out.slice(0, 160))

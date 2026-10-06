@@ -2,13 +2,27 @@
  * Configuracion global del bot.
  * Todo sale de variables de entorno (.env). Nada de claves hardcodeadas.
  */
-import 'dotenv/config'
+import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import dotenv from 'dotenv'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export const ROOT = path.resolve(__dirname, '..')
+
+const ENV_FILE = path.join(ROOT, '.env')
+dotenv.config({ path: ENV_FILE, quiet: true })
+
+/**
+ * Contenido literal del .env.
+ * Hace falta porque algunas variables del sistema chocan con las nuestras:
+ * Termux, por ejemplo, define PREFIX=/data/data/com.termux/files/usr y dotenv
+ * NO pisa las variables que ya existen en el entorno.
+ */
+const fileEnv = fs.existsSync(ENV_FILE)
+  ? dotenv.parse(fs.readFileSync(ENV_FILE))
+  : {}
 
 const bool = (value, fallback = false) => {
   if (value === undefined || value === null || value === '') return fallback
@@ -30,6 +44,43 @@ export const onlyDigits = (value) => String(value ?? '').replace(/\D/g, '')
 
 /** Prefijos alternativos que el bot acepta ademas del configurado. */
 export const COMMON_PREFIXES = ['.', '!', '#', '/', ',', ';', '$', '&']
+
+/** Un prefijo valido: 1-3 caracteres, sin espacios y sin barras de ruta. */
+const validPrefix = (value) => {
+  const v = String(value ?? '').trim()
+  if (!v || v.length > 3) return ''
+  if (/[\s\\/]/.test(v)) return ''
+  return v
+}
+
+/**
+ * Prefijo de los comandos, resistente al choque con la variable PREFIX del
+ * sistema (Termux). Orden: BOT_PREFIX > PREFIX del .env > PREFIX del entorno.
+ */
+function resolvePrefix () {
+  const candidates = [
+    fileEnv.BOT_PREFIX, process.env.BOT_PREFIX,
+    fileEnv.PREFIX, process.env.PREFIX
+  ]
+  for (const candidate of candidates) {
+    const prefix = validPrefix(candidate)
+    if (prefix) return prefix
+  }
+  return '.'
+}
+
+/** true si la variable PREFIX del sistema estaba interfiriendo. */
+export const prefixWasShadowed = Boolean(
+  process.env.PREFIX && !validPrefix(process.env.PREFIX)
+)
+
+/**
+ * Claves del .env que el entorno del sistema esta tapando (dotenv respeta
+ * siempre las variables que ya existen). Util para avisar en el arranque.
+ */
+export const shadowedEnvKeys = Object.keys(fileEnv).filter(
+  (key) => process.env[key] !== undefined && process.env[key] !== fileEnv[key]
+)
 
 /**
  * Variantes equivalentes de un numero de telefono.
@@ -69,7 +120,7 @@ export const config = {
   // Identidad
   botName: str(process.env.BOT_NAME, 'Bot-Base'),
   botVersion: str(process.env.BOT_VERSION, '1.0.0'),
-  prefix: str(process.env.PREFIX, '.'),
+  prefix: resolvePrefix(),
   // Acepta tambien los prefijos habituales (. ! # / , ; $ &) para que un
   // prefijo mal escrito nunca deje al bot mudo. El menu sigue mostrando el tuyo.
   multiPrefix: bool(process.env.MULTI_PREFIX, true),

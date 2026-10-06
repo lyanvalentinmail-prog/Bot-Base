@@ -136,7 +136,9 @@ async function main () {
   // El owner de la prueba se fija por entorno antes de cargar la configuración.
   process.env.OWNER_NUMBER = '222222222222'
   process.env.BOT_MODE = 'public'
-  process.env.PREFIX = process.env.PREFIX || '.'
+  // Simula el choque de Termux: su variable PREFIX es una ruta y no debe usarse.
+  delete process.env.BOT_PREFIX
+  process.env.PREFIX = '/data/data/com.termux/files/usr'
 
   const { default: config } = await import('../bot/config.js')
   const { initDatabase, db, getPrefix, setSetting, getUser } = await import('../bot/database/index.js')
@@ -158,6 +160,7 @@ async function main () {
 
   /* 1. Infraestructura */
   check(`configuración cargada (prefijo "${prefix}")`, prefix === config.prefix)
+  check('ignora la variable PREFIX del sistema (Termux)', config.prefix.length <= 3 && !config.prefix.includes('/'), `prefijo = ${config.prefix}`)
   check(`comandos cargados (${registry.size})`, registry.size > 0)
   check('el .env manda sobre la base de datos nueva', db.settings.prefix === null)
 

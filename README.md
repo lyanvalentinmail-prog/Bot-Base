@@ -166,7 +166,11 @@ REMOVE_BG_API_KEY=          # .removebg
 NODE_ENV=production
 ```
 
-Variables opcionales (ya incluidas en `.env.example`): `LOG_LEVEL`, `PAIRING_NUMBER`, `SESSION_NAME`,
+> 📱 **Termux define su propia variable `PREFIX`** (`/data/data/com.termux/files/usr`). El bot la
+> detecta y la ignora: usa siempre el `PREFIX` de tu `.env`. Si quieres fijar el prefijo desde la
+> terminal, usa `BOT_PREFIX=!` en lugar de `PREFIX=!`.
+
+Variables opcionales (ya incluidas en `.env.example`): `BOT_PREFIX`, `LOG_LEVEL`, `PAIRING_NUMBER`, `SESSION_NAME`,
 `OPENAI_MODEL`, `OPENAI_IMAGE_MODEL`, `OPENAI_TTS_MODEL`, `GEMINI_MODEL`, `COMMAND_COOLDOWN`,
 `ENABLE_GROUPS`, `AUTO_READ`.
 
@@ -443,6 +447,13 @@ Si una descarga falla, actualiza yt-dlp: `pip install -U yt-dlp`.
 <summary><b>«⚠️ Este servicio no está configurado»</b></summary>
 
 Ese comando necesita una API key. Añádela en el `.env` y reinicia el bot. Mira qué falta con `.servicios`.
+</details>
+
+<details>
+<summary><b>En el menú salen rutas raras como <code>/data/data/com.termux/files/usr</code></b></summary>
+
+Era el choque con la variable `PREFIX` de Termux y ya está corregido: actualiza con `git pull`
+y reinicia. Si quieres definir el prefijo desde la terminal usa `BOT_PREFIX`, no `PREFIX`.
 </details>
 
 <details>

@@ -7,7 +7,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 
-import config from './config.js'
+import config, { prefixWasShadowed, shadowedEnvKeys } from './config.js'
 import logger from './lib/logger.js'
 import registry from './lib/loader.js'
 import { initDatabase, db, getPrefix, getMode } from './database/index.js'
@@ -33,6 +33,16 @@ function preflight () {
     console.error(`\n❌ Se requiere Node.js ${MIN_NODE_MAJOR} o superior (tienes ${process.versions.node}).`)
     console.error('   Termux: pkg install nodejs-lts -y\n')
     process.exit(1)
+  }
+
+  if (prefixWasShadowed) {
+    console.warn('ℹ️  Tu sistema define PREFIX (Termux lo usa para sus rutas): se ignora y se usa el del .env.')
+    console.warn('   Si quieres fijarlo desde la terminal, usa BOT_PREFIX en vez de PREFIX.\n')
+  }
+
+  const otherShadowed = shadowedEnvKeys.filter((key) => key !== 'PREFIX')
+  if (otherShadowed.length) {
+    console.warn(`⚠️  Estas variables del sistema tienen prioridad sobre tu .env: ${otherShadowed.join(', ')}\n`)
   }
 
   if (!fs.existsSync(path.join(config.paths.root, '.env'))) {

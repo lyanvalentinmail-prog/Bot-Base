@@ -49,6 +49,10 @@ async function main () {
   ensureDependencies('npm run setup')
   ok('Dependencias instaladas')
 
+  if (process.env.PREFIX && (process.env.PREFIX.includes('/') || process.env.PREFIX.length > 3)) {
+    info('Tu sistema define PREFIX (Termux lo usa para sus rutas): el bot la ignora y usa la del .env.')
+  }
+
   /* 2. Carpetas */
   for (const dir of ['sessions', 'data', 'assets/temp']) {
     await fsp.mkdir(path.join(ROOT, dir), { recursive: true })
